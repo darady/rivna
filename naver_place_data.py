@@ -137,7 +137,7 @@ if ranking_file is not None:
     date = datetime.strptime(date, '%Y%m%d')
 
     
-    st.write(date)
+    # st.write(date)
     # datesData = list()
     # for index in range(len(rankingDataList[0].rankingList)):
     #     datesData.append(date+timedelta(days=index))
@@ -153,9 +153,10 @@ if ranking_file is not None:
             rankingList = rankingDataList[index].rankingList
             
             for idx in range(len(rankingList)):
-                if rankingList[idx] >= 0:
-                    currentDate = date+timedelta(days=idx)
+                currentDate = date-timedelta(days=idx)
 
+                # st.write(currentDate)
+                if rankingList[idx] >= 0:
                     itemDf = pd.DataFrame({'keyword' : [ searchWord ],
                             'date' : [ currentDate ],
                             'ranking' : [ rankingList[idx] ]})
@@ -174,7 +175,7 @@ if ranking_file is not None:
 
     highlight = alt.selection_point(on='pointerover', fields=['keyword'], nearest=True)
 
-    # Create a common chart object
+    #Create a common chart object
     chart = alt.Chart(rankingChartDf).encode(
         alt.Color("keyword").legend(None)
     ).properties(width=800, height=350)
@@ -183,7 +184,9 @@ if ranking_file is not None:
     line = chart.mark_line().encode(
         x="date:T",
         y=alt.Y('ranking:Q').sort('descending'),
-        size=alt.condition(~highlight, alt.value(1), alt.value(3))
+        # x_label='date',
+        # y_label='ranking',
+        size=alt.condition(~highlight, alt.value(1), alt.value(2))
     )
 
     # Use the `argmax` aggregate to limit the dataset to the final value
@@ -194,7 +197,7 @@ if ranking_file is not None:
     )
 
     # Create a text label
-    text = label.mark_text(align='left', dx=4)
+    text = label.mark_text(align='left', dx=4, fontSize=10)
 
     # Create a circle annotation
     # circle = label.mark_circle()
