@@ -214,11 +214,12 @@ if ranking_file is not None:
 #N사_플레이스 저장 체크	검색어	매칭값	플레이스명	메모	등록일	07-01	06-24
 #-----	성수우동	https://m.place.naver.com/restaurant/1268725018/home?entry=pl	니카이 우동		2024-06-24 13:41:56	15,000+	14,000+
 class SaveData:
-    def __init__(self, key, searchWord, matchingValue, placeName, saveList):
+    def __init__(self, key, searchWord, matchingValue, placeName, dateList, saveList):
         self.key = key
         self.searchWord = searchWord
         self.matchingValue = matchingValue
         self.placeName = placeName
+        self.dateList = dateList
         self.saveList = saveList
 
 
@@ -226,13 +227,24 @@ class SaveData:
 def parseSaveDf(save_df):
     resultList = list()
     dataIndex = 0
+
+    itemList = []
+    for index in range(len(save_df.columns)):
+        itemList.append(save_df.columns[index])
+
+    itemDf = pd.DataFrame(columns=itemList)
+    itemDf.loc[0] = itemList
+
+    save_df = pd.concat([itemDf, save_df], ignore_index=True)
+
     for index in range(len(save_df.index)):
         if (len(save_df.index) <= index):
             break
 
-        rawData = save_df[dataIndex:dataIndex+1]
+        rawData = save_df[dataIndex:dataIndex+2]
 
         saveList = list()
+        dateList = list()
 
         if len(rawData.index) <= 0:
             break
@@ -240,17 +252,21 @@ def parseSaveDf(save_df):
         for idx in range(len(rawData.columns)):
             if idx+6 >= len(rawData.columns):
                 continue
-
-            saveStr = rawData.iloc[0, idx+6]
+            
+            dateStr = rawData.iloc[0, idx+6]
+            saveStr = rawData.iloc[1, idx+6]
             if saveStr == 'nan' or saveStr is None or isna(saveStr) or saveStr == '-':
                 saveStr = '-1'
+                dataStr = '-'
 
             saveStr = re.sub('\+','', saveStr)
             saveStr = re.sub(',','', saveStr)
+
+            dateList.append(dateStr)
             saveList.append(int(saveStr))
         
-        saveData = SaveData(rawData.iloc[0, 5], rawData.iloc[0, 1], rawData.iloc[0, 2]
-                                  , rawData.iloc[0, 3], saveList)
+        saveData = SaveData(rawData.iloc[1, 5], rawData.iloc[1, 1], rawData.iloc[1, 2]
+                                  , rawData.iloc[1, 3], dateList, saveList)
         resultList.append(saveData)
 
         dataIndex += 3
@@ -282,13 +298,13 @@ if save_file is not None:
 
     saveChartDf = pd.DataFrame()
 
-    # N사_플레이스 저장 체크_전체_20240704.csv
-    date = re.sub('N사_플레이스 저장 체크_전체_','', save_file.name)
-    date = re.sub('.csv','', date)
+    # # N사_플레이스 저장 체크_전체_20240704.csv
+    # date = re.sub('N사_플레이스 저장 체크_전체_','', save_file.name)
+    # date = re.sub('.csv','', date)
 
-    # st.write(date)
+    # # st.write(date)
 
-    date = datetime.strptime(date, '%Y%m%d')
+    # date = datetime.strptime(date, '%Y%m%d')
 
     
     # st.write(date)
@@ -305,11 +321,13 @@ if save_file is not None:
         if (selctedPlaceName == saveDataList[index].placeName):
             searchWord = saveDataList[index].searchWord
             saveList = saveDataList[index].saveList
+            dateList = saveDataList[index].dateList
             
             beforeSaveData = -1
             for idx in range(len(saveList)):
                 if saveList[idx] >= 0:
-                    currentDate = date-timedelta(weeks=idx)
+
+                    currentDate = datetime.strptime(dateList[idx], '%m-%d')
                     if beforeSaveData < 0:
                         beforeSaveData = saveList[idx]
 
