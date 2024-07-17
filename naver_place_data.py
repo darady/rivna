@@ -17,6 +17,10 @@ import altair as alt
 from datetime import datetime, timedelta
 # from streamlit_tags import st_tags, st_tags_sidebar
 
+# Optional in VS Code
+alt.renderers.enable('mimetype')
+alt.renderers.enable("browser")
+
 
 st.sidebar.title('Naver place data analysis')
 
