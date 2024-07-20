@@ -15,12 +15,9 @@ import math
 from pathlib import Path
 import altair as alt
 from datetime import datetime, timedelta
+import requests
+
 # from streamlit_tags import st_tags, st_tags_sidebar
-
-# Optional in VS Code
-alt.renderers.enable('mimetype')
-alt.renderers.enable("browser")
-
 
 st.sidebar.title('Naver place data analysis')
 
@@ -31,11 +28,25 @@ ranking_file = st.sidebar.file_uploader('', key='ranking_file')
 st.sidebar.write('### Choose a save data file')
 save_file = st.sidebar.file_uploader('', key='save_file')
 
+def saveUploadedFile(path, file, newFileName):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    with open(os.path.join(path, newFileName), 'wb') as f:
+        f.write(file.getbuffer())
+    return st.success('Save file : {} in {}'.format(file.name, path))
+
+
+backup_ranking_path = 'https://raw.githubusercontent.com/darady/rivna/main/backup/ranking.csv'
+backup_save_path = 'https://raw.githubusercontent.com/darady/rivna/main/backup/save.csv'
+
 @st.cache_data
 def initRankingDf(ranking_file):
     ranking_df = ''
     if ranking_file is not None:
         ranking_df = pd.read_csv(ranking_file)
+    else:
+        response = requests.get(backup_ranking_path)
+        ranking_df = pd.read_csv(response.text)
     return ranking_df
 
 @st.cache_data
@@ -43,10 +54,14 @@ def initSaveDf(save_file):
     save_df = ''
     if save_file is not None:
         save_df = pd.read_csv(save_file)
+    else:
+        response = requests.get(backup_save_path)
+        save_df = pd.read_csv(response.text)
     return save_df
 
 ranking_df = initRankingDf(ranking_file)
 save_df = initSaveDf(save_file)
+
 
 
 def isna(x):
@@ -136,6 +151,7 @@ if ranking_file is not None:
     # rankingChartDf[rankingDataList[0].searchWord] = rankingDataList[0].rankingList
 
     # N사_플레이스 순위 체크_전체_20240712.csv
+    # TODO update 필요
     date = re.sub('N사_플레이스 순위 체크_전체_','', ranking_file.name)
     date = re.sub('.csv','', date)
     date = datetime.strptime(date, '%Y%m%d')
@@ -188,8 +204,6 @@ if ranking_file is not None:
     line = chart.mark_line().encode(
         x="date:T",
         y=alt.Y('ranking:Q').sort('descending'),
-        # x_label='date',
-        # y_label='ranking',
         size=alt.condition(~highlight, alt.value(1), alt.value(2))
     )
 
@@ -412,6 +426,12 @@ if save_file is not None:
     # Draw the chart with all the layers combined
     line + circle + text
 
+backup_button = st.sidebar.button('Backup')
+if backup_button:
+    if ranking_file is not None:
+        saveUploadedFile('backup', ranking_file, "ranking.csv")
+    if save_file is not None:
+        saveUploadedFile('backup', save_file, "save.csv")
 
 # make ranking grape
 
